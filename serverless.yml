@@ -1,0 +1,49 @@
+service: akashi-daily-report
+
+provider:
+  name: aws
+  runtime: python3.6
+  region: ap-northeast-1
+  stage: prod
+  environment:
+    SELENIUM_LAYER_SERVICE: selenium-layer
+
+plugins:
+  - serverless-python-requirements
+
+package:
+  exclude:
+    - config.json
+    - config.sample.json
+    - package.json
+    - package-lock.json
+    - requirements.txt
+    - node_modules/**
+    - .python-version
+    - README.md
+    - main.py
+
+custom:
+  pythonRequirements:
+    dockerizeZip: true
+    pythonBin: ${file(./config.json):python_bin}
+
+functions:
+  main:
+    handler: handler.main
+    name: akashi-daily-report
+    timeout: 30
+    events:
+      - schedule: cron(0 0 ? * MON-FRI *)
+    layers:
+      - ${cf:${self:provider.environment.SELENIUM_LAYER_SERVICE}-${opt:stage, self:provider.stage}.SeleniumLayerExport}
+      - ${cf:${self:provider.environment.SELENIUM_LAYER_SERVICE}-${opt:stage, self:provider.stage}.ChromedriverLayerExport}
+    environment:
+      USER_ID: ${file(./config.json):user_id}
+      PASSWORD: ${file(./config.json):password}
+      SLACK_TOKEN: ${file(./config.json):token}
+      SLACK_CHANNEL_ID: ${file(./config.json):channel_id}
+      COMPANY_ID: ${file(./config.json):company_id}
+      URL: ${file(./config.json):url}
+
+
