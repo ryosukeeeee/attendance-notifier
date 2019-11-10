@@ -1,5 +1,7 @@
 service: akashi-daily-report
 
+frameworkVersion: '>=1.0.0 <2.0.0'
+
 provider:
   name: aws
   runtime: python3.6
@@ -7,11 +9,14 @@ provider:
   stage: prod
   environment:
     SELENIUM_LAYER_SERVICE: selenium-layer
+    TZ: Asia/Tokyo
 
 plugins:
   - serverless-python-requirements
+  - serverless-offline
 
 package:
+  individually: true
   exclude:
     - config.json
     - config.sample.json
@@ -21,7 +26,6 @@ package:
     - node_modules/**
     - .python-version
     - README.md
-    - main.py
 
 custom:
   pythonRequirements:
@@ -29,15 +33,36 @@ custom:
     pythonBin: ${file(./config.json):python_bin}
 
 functions:
+  slashCommandEndpoint:
+    handler: slashCommandEndpoint.main
+    module: slashCommandEndpoint
+    name: slashCommandEndpoint
+    environment:
+      VERIFICATION_TOKEN: ${file(./config.json):verification_token}
+      MAIN_FUNCTION_ARN:         
+        Fn::Join:
+        - ':'
+        - - 'arn:aws:lambda'
+          - Ref: 'AWS::Region'
+          - Ref: 'AWS::AccountId'
+          - 'function'
+          - 'akashi-daily-report'
+    role: slashCommandEndpointRole
+    events:
+      - http:
+          path: /
+          method: post
+          cors: true
   main:
     handler: handler.main
+    module: main
     name: akashi-daily-report
     timeout: 30
     events:
       - schedule: cron(0 0 ? * MON-FRI *)
     layers:
-      - ${cf:${self:provider.environment.SELENIUM_LAYER_SERVICE}-${opt:stage, self:provider.stage}.SeleniumLayerExport}
-      - ${cf:${self:provider.environment.SELENIUM_LAYER_SERVICE}-${opt:stage, self:provider.stage}.ChromedriverLayerExport}
+      - ${cf:${self:provider.environment.SELENIUM_LAYER_SERVICE}-prod.SeleniumLayerExport}
+      - ${cf:${self:provider.environment.SELENIUM_LAYER_SERVICE}-prod.ChromedriverLayerExport}
     environment:
       USER_ID: ${file(./config.json):user_id}
       PASSWORD: ${file(./config.json):password}
@@ -46,4 +71,47 @@ functions:
       COMPANY_ID: ${file(./config.json):company_id}
       URL: ${file(./config.json):url}
 
-
+resources:
+  Resources:
+    slashCommandEndpointRole:
+      Type: AWS::IAM::Role
+      Properties:
+        Path: /my/cust/path/
+        RoleName: slashCommandEndpointRole
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - lambda.amazonaws.com
+              Action: sts:AssumeRole
+        Policies:
+          - PolicyName: myPolicyName
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow # note that these rights are given in the default policy and are required if you want logs out of your lambda(s)
+                  Action:
+                    - logs:CreateLogGroup
+                    - logs:CreateLogStream
+                    - logs:PutLogEvents
+                  Resource:
+                    - 'Fn::Join':
+                      - ':'
+                      -
+                        - 'arn:aws:logs'
+                        - Ref: 'AWS::Region'
+                        - Ref: 'AWS::AccountId'
+                        - 'log-group:/aws/lambda/*:*:*'
+                - Effect: 'Allow'
+                  Action:
+                    - 'lambda:InvokeFunction'
+                  Resource:
+                    Fn::Join:
+                      - ':'
+                      - - 'arn:aws:lambda'
+                        - Ref: 'AWS::Region'
+                        - Ref: 'AWS::AccountId'
+                        - 'function'
+                        - 'akashi-daily-report'
