@@ -1,19 +1,21 @@
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from time import sleep
 import os
-import requests
-from bs4 import BeautifulSoup
-import html5lib
 import datetime
 import re
+from time import sleep
+import requests
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from bs4 import BeautifulSoup
+import html5lib
 
+
+# config.jsonに設定したパラメータ
 URL = os.environ['URL']
 COMPANY_ID = os.environ['COMPANY_ID']
-user_id = os.environ['USER_ID']
-password = os.environ['PASSWORD']
-token = os.environ['SLACK_TOKEN']
-slack_channel = os.environ['SLACK_CHANNEL_ID']
+USER_ID = os.environ['USER_ID']
+PASSWORD = os.environ['PASSWORD']
+SLACK_TOKEN = os.environ['SLACK_TOKEN']
+SLACK_CHANNEL = os.environ['SLACK_CHANNEL_ID']
 
 # ハンドラ
 def handler(event, context):
@@ -22,6 +24,7 @@ def handler(event, context):
 
     driver = setup_webdriver()
 
+    # スラッシュコマンド「/today」のとき
     if 'command' in event.keys() and event.get("command", "") == "/today":
         print("found command")
         print(event.get('command'))
@@ -40,8 +43,8 @@ def get_cells(driver):
     driver.get(URL)
 
     driver.find_element_by_id('form_company_id').send_keys(COMPANY_ID)
-    driver.find_element_by_id('form_login_id').send_keys(user_id)
-    driver.find_element_by_id('form_password').send_keys(password)
+    driver.find_element_by_id('form_login_id').send_keys(USER_ID)
+    driver.find_element_by_id('form_password').send_keys(PASSWORD)
     driver.find_element_by_xpath('//*[@id="new_form"]/input[4]').click()
 
     # jQueryで描画しているので待つ
@@ -107,7 +110,7 @@ def show_working_time(working_days, sum_time, over_time):
     text = '昨日までの労働時間: '+'{:02}:{:02}'.format(result_hour, result_minute) + '\n'
     text = text + excess_or_deficiency_label
     text = text + '{:02}:{:02}'.format(over_hour, over_minute)
-    
+
     return text
 
 def setup_webdriver():
@@ -157,8 +160,8 @@ def today_check_in_time(driver):
             break
 
     param = {
-        'token': token,
-        'channel': slack_channel, 
+        'token': SLACK_TOKEN,
+        'channel': SLACK_CHANNEL, 
         'mrkdwn': True,
         'text': text
     }
@@ -179,8 +182,8 @@ def daily_report(driver):
         driver.quit()
 
         param = {
-            'token': token,
-            'channel': slack_channel, 
+            'token': SLACK_TOKEN,
+            'channel': SLACK_CHANNEL,
             'mrkdwn': True,
             'text': text
         }

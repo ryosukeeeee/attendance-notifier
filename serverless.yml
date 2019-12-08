@@ -23,7 +23,6 @@ package:
     - package-lock.json
     - requirements.txt
     - node_modules/**
-    - .python-version
     - README.md
 
 custom:
@@ -58,6 +57,7 @@ functions:
     name: akashi-daily-report
     timeout: 30
     events:
+      # 毎週月曜から金曜のUTCの0時（JSTで9時）に実行される
       - schedule: cron(0 0 ? * MON-FRI *)
     layers:
       - ${cf:${self:provider.environment.SELENIUM_LAYER_SERVICE}-prod.SeleniumLayerExport}
@@ -65,7 +65,7 @@ functions:
     environment:
       USER_ID: ${file(./config.json):user_id}
       PASSWORD: ${file(./config.json):password}
-      SLACK_TOKEN: ${file(./config.json):token}
+      SLACK_TOKEN: ${file(./config.json):slack_token}
       SLACK_CHANNEL_ID: ${file(./config.json):channel_id}
       COMPANY_ID: ${file(./config.json):company_id}
       URL: ${file(./config.json):url}
