@@ -3,13 +3,14 @@ import urllib.parse
 import os
 import json
 
-def main(event, context):
+def handler(event, context):
 
     # リクエストが正当か確認する
     verification_token = os.environ['VERIFICATION_TOKEN']
     body = map_to_dict(event["body"])
     print(event)
     print(body.keys())
+
     if body.get("token", "") != verification_token:
         print("token is invalid")
 
@@ -19,27 +20,29 @@ def main(event, context):
             'isBase64Encoded': False
         }
 
+    command = body.get("command", "")
     # スラッシュコマンド「/today」だったらlambdaを呼ぶ
-    if body.get("command") == '/today':
-        print('slash command')
-        try:
+    try:
+        if command == '/today':
             client = boto3.client('lambda')
             response = client.invoke(
-                FunctionName = os.environ['MAIN_FUNCTION_ARN'],
-                InvocationType = 'Event',
-                Payload = json.dumps(body)
+                FunctionName=os.environ['MAIN_FUNCTION_ARN'],
+                InvocationType='Event',
+                Payload=json.dumps(body)
             )
             print(response)
-        except:
-            import traceback
-            print("[Error]")
-            traceback.print_exc()
-
-        return {
-            'statusCode': 200,
-            'body': "",
-            'isBase64Encoded': False
-        }
+        elif command == '/summary':
+            client = boto3.client('lambda')
+            response = client.invoke(
+                FunctionName=os.environ['MAIN_FUNCTION_ARN'],
+                InvocationType='Event',
+                Payload=json.dumps(body)
+            )
+            print(response)
+    except:
+        import traceback
+        print("[Error]")
+        traceback.print_exc()
 
     return {
         'statusCode': 200,
