@@ -16,7 +16,7 @@ token = os.environ['SLACK_TOKEN']
 slack_channel = os.environ['SLACK_CHANNEL_ID']
 
 # ハンドラ
-def main(event, context):
+def handler(event, context):
     print("event")
     print(event)
 

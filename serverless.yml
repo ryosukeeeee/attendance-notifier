@@ -13,7 +13,6 @@ provider:
 
 plugins:
   - serverless-python-requirements
-  - serverless-offline
 
 package:
   individually: true
@@ -34,7 +33,7 @@ custom:
 
 functions:
   slashCommandEndpoint:
-    handler: slashCommandEndpoint.main
+    handler: slashCommandEndpoint.handler
     module: slashCommandEndpoint
     name: slashCommandEndpoint
     environment:
@@ -54,7 +53,7 @@ functions:
           method: post
           cors: true
   main:
-    handler: handler.main
+    handler: main.handler
     module: main
     name: akashi-daily-report
     timeout: 30
